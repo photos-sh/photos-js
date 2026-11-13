@@ -1,0 +1,96 @@
+name: Release
+
+# Publishes the package to npm when a tag `v<version>` is pushed, or when run
+# by hand (workflow_dispatch) for the version package.json says.
+#
+# No token is stored. npm trusts this workflow (trusted publishing). npm lets
+# only a package that already exists name its trusted publisher, so the first
+# version is published by hand:
+#
+#   npm login
+#   npm publish
+#
+# and then, on npmjs.com, in the package's Settings under Trusted publisher:
+#
+#   Publisher                  GitHub Actions
+#   Organization or user       photos-sh
+#   Repository                 photos-js
+#   Workflow filename          release.yml
+#
+# A version that is already on npm is left alone, so the tag of that first
+# version passes without publishing anything.
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# One run per tag or branch, and never cancelled.
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: build and publish to npm
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # The short-lived identity that npm accepts in place of a token.
+      id-token: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # Full history: the commit is checked against main below.
+          fetch-depth: 0
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+          cache: npm
+
+      # Trusted publishing needs npm 11.5.1 or later.
+      - run: npm install --global npm@latest
+
+      # The version is package.json's; a tag has to say the same.
+      - name: the tag is the package's version
+        id: package
+        run: |
+          name="$(npm pkg get name | tr -d '"')"
+          version="$(npm pkg get version | tr -d '"')"
+          echo "$name $version"
+          if [ "$GITHUB_REF_TYPE" = tag ] && [ "$GITHUB_REF_NAME" != "v$version" ]; then
+            echo "The tag is $GITHUB_REF_NAME, but package.json says $version."
+            exit 1
+          fi
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      # A release from a side branch would publish code main never saw.
+      - name: the commit is on main
+        run: |
+          git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "$GITHUB_SHA is not on main. Merge first, then tag the merged commit."
+            exit 1
+          fi
+
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+
+      # `npm publish` builds first (the prepack script) and publishes as
+      # public (publishConfig in package.json).
+      - name: publish to npm
+        env:
+          PACKAGE: ${{ steps.package.outputs.name }}@${{ steps.package.outputs.version }}
+        run: |
+          if npm view "$PACKAGE" version > /dev/null 2>&1; then
+            echo "$PACKAGE is already on npm: nothing to publish."
+            exit 0
+          fi
+          npm publish

@@ -1,0 +1,63 @@
+{
+  "name": "@photos-sh/photos",
+  "version": "1.0.0",
+  "description": "Client library for the Photos.sh image API: background removal, resizing, upscaling, object and text removal, marketplace checks and fixes, barcode and label reading.",
+  "license": "MIT",
+  "author": "Vallic",
+  "homepage": "https://photos.sh",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/photos-sh/photos-js.git"
+  },
+  "bugs": {
+    "url": "https://github.com/photos-sh/photos-js/issues"
+  },
+  "keywords": [
+    "photos.sh",
+    "image",
+    "background-removal",
+    "resize",
+    "upscale",
+    "ocr",
+    "barcode",
+    "product-photos"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "clean": "node -e \"for (const dir of process.argv.slice(1)) fs.rmSync(dir, { recursive: true, force: true })\"",
+    "build": "npm run clean -- dist && tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "biome check .",
+    "format": "biome check --write .",
+    "build:test": "npm run clean -- build-test && tsc -p tsconfig.test.json",
+    "test": "npm run build:test && node --test build-test/test/*.test.js",
+    "test:integration": "npm run build:test && node --test build-test/test/integration/*.test.js",
+    "prepack": "npm run build"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.6.6",
+    "@types/node": "^20.19.0",
+    "typescript": "^5.9.0"
+  }
+}
