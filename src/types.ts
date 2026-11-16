@@ -42,6 +42,15 @@ export interface RemoveBackgroundOptions extends OutputOptions, RequestOptions {
   crop?: boolean | undefined;
   /** Margin around the subject when cropping, in pixels. */
   padding?: number | undefined;
+  /**
+   * For studio shots (a product on a plain, light backdrop, as in a light
+   * tent): also keep what clearly stands out from the backdrop and touches the
+   * product, such as the gift box, case or lid shown with a bottle, or a pale
+   * box the model left half transparent. Shadows and the floor below the
+   * product are left out. A photo without a plain light backdrop is cut out as
+   * without it.
+   */
+  studio?: boolean | undefined;
   /** Return the greyscale alpha mask instead of the cutout. Takes no staging options. */
   mask?: boolean | undefined;
   /** Place the subject on a canvas this wide, in pixels. Needs `height`. */

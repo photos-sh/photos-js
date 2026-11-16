@@ -75,8 +75,8 @@ export class ImageResult {
 /** The result of `removeBackground`. */
 export class RemoveBackgroundResult extends ImageResult {
   /**
-   * `false` when a canvas was asked for and the photo has no subject: the
-   * canvas is then empty. `undefined` when the API does not say (no
+   * `false` when no subject was found (under 3% of the photo): the photo is
+   * then returned as it was. `undefined` when the API does not say (no
    * `X-Subject-Found` header), which is not the same as `false`.
    */
   readonly subjectFound: boolean | undefined;

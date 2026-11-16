@@ -116,7 +116,16 @@ const cutout = await photos.removeBackground("shoe.jpg", {
 
 // The greyscale alpha mask instead of the cutout:
 const mask = await photos.removeBackground("shoe.jpg", { mask: true });
+
+// A studio shot (a product on a plain, light backdrop, as in a light tent):
+// also keep the gift box, case or lid shown with the bottle.
+const boxed = await photos.removeBackground("bottle.jpg", { studio: true });
 ```
+
+`studio` also keeps what clearly stands out from the backdrop and touches the
+product, such as a pale box the model left half transparent. Shadows and the
+floor below the product are left out. A photo without a plain light backdrop
+is cut out as without it.
 
 The same call can stage the cutout: on a canvas, with a shadow or a reflection
 under it, and with a colour, an image or the photo's own blurred background
@@ -132,7 +141,7 @@ const staged = await photos.removeBackground("shoe.jpg", {
   reflection: true, // needs room below the subject: a fill under 1
   backgroundImage: "studio.jpg", // an image behind the subject, scaled to cover
 });
-staged.subjectFound; // false: the photo has no subject and the canvas is empty
+staged.subjectFound; // false: no subject was found and the photo comes back as it was
 
 // The photo's own background, blurred (1 to 100):
 const soft = await photos.removeBackground("portrait.jpg", { blur: 40 });

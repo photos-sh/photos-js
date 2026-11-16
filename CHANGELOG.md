@@ -4,6 +4,16 @@ All notable changes to this library are written down here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the library
 follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+- `removeBackground` takes `studio`, for studio shots (a product on a plain,
+  light backdrop): it also keeps what clearly stands out from the backdrop and
+  touches the product, such as the gift box, case or lid shown with a bottle.
+  It is sent only when given.
+- `subjectFound` docs: since engine 0.1.9 the API returns the photo as it was,
+  with `X-Subject-Found: false`, whenever no subject is found (under 3% of the
+  photo), not only for an empty canvas.
+
 ## 1.0.0 (unreleased)
 
 First version.

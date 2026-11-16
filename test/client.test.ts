@@ -310,6 +310,14 @@ describe("image methods", () => {
     assert.equal((await photos.removeBackground(IMAGE)).subjectFound, true);
   });
 
+  it("removeBackground sends studio, and leaves it out when not set", async (t) => {
+    const { photos, server } = await fixture(t, () => imageReply());
+    await photos.removeBackground(IMAGE, { studio: true, crop: true });
+    await photos.removeBackground(IMAGE, { studio: undefined });
+    assert.equal(server.requests[0]?.query.toString(), "studio=true&crop=true");
+    assert.equal(server.requests[1]?.query.toString(), "");
+  });
+
   it("resize maps trimTolerance to trim_tolerance and sends dpi", async (t) => {
     const { photos, server } = await fixture(t, () => imageReply());
     await photos.resize(IMAGE, { trim: true, trimTolerance: 20, dpi: 300 });
