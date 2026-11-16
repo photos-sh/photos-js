@@ -6,6 +6,8 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
+## 1.2.0 (2026-11-16)
+
 - `run` recipes can read the photo with `[barcodes]` (`all_formats = true`
   for every format) and `[text]`. The image result has what they found:
   `barcodes` (`Barcode[]`, from `X-Barcodes`), `textLines` (`string[]`, the
@@ -19,6 +21,9 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   answers `422` (`UnprocessableError`).
 - `preset(name)` returns a built-in preset's recipe as TOML
   (`GET /v1/presets/{name}`); an unknown name is a `NotFoundError`.
+
+## 1.1.0 (2026-11-16)
+
 - `removeBackground` takes `studio`, for studio shots (a product on a plain,
   light backdrop): it also keeps what clearly stands out from the backdrop and
   touches the product, such as the gift box, case or lid shown with a bottle.
@@ -27,7 +32,7 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   with `X-Subject-Found: false`, whenever no subject is found (under 3% of the
   photo), not only for an empty canvas.
 
-## 1.0.0 (unreleased)
+## 1.0.0 (2026-11-13)
 
 First version.
 
