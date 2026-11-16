@@ -217,7 +217,11 @@ export class Photos {
     return new RestoreFacesResult(await this.#post("/v1/restore-faces", [image], options));
   }
 
-  /** Applies a built-in preset (`{ preset }`) or a recipe (`{ recipe }`, TOML). */
+  /**
+   * Applies a built-in preset (`{ preset }`) or a recipe (`{ recipe }`, TOML).
+   * A recipe's `[barcodes]` and `[text]` steps read the photo: what they found
+   * is in the result's `barcodes`, `textLines` and `textTruncated`.
+   */
   async run(image: ImageInput, options: RunOptions): Promise<ImageResult> {
     const { recipe, ...rest } = options;
     return new ImageResult(await this.#post("/v1/run", [image], rest, toQuery(rest), { recipe }));
@@ -303,6 +307,15 @@ export class Photos {
   /** The built-in presets `run` takes. */
   async presets(options: RequestOptions = {}): Promise<Preset[]> {
     return parse(await this.#get("/v1/presets", options));
+  }
+
+  /**
+   * A built-in preset's recipe, as TOML: a starting point for your own
+   * `recipe`. An unknown name is a `NotFoundError`.
+   */
+  async preset(name: string, options: RequestOptions = {}): Promise<string> {
+    const response = await this.#get(`/v1/presets/${encodeURIComponent(name)}`, options);
+    return new TextDecoder().decode(response.bytes);
   }
 
   /** The key your webhooks are signed with. */

@@ -1,5 +1,6 @@
 import { PhotosError } from "./errors.js";
 import { nodeFs } from "./input.js";
+import type { Barcode } from "./types.js";
 
 /** @internal A response read in full. */
 export interface RawResponse {
@@ -31,6 +32,39 @@ function listHeader(headers: Headers, name: string): string[] {
     .filter((code) => code !== "");
 }
 
+/** A header's JSON value; `undefined` when the header is missing or is not JSON. */
+function jsonHeader(headers: Headers, name: string): unknown {
+  const value = headers.get(name);
+  if (value === null) return undefined;
+  try {
+    return JSON.parse(value) as unknown;
+  } catch {
+    return undefined;
+  }
+}
+
+function isBarcode(value: unknown): value is Barcode {
+  if (typeof value !== "object" || value === null) return false;
+  const { format, value: decoded, gs1 } = value as Record<string, unknown>;
+  return (
+    typeof format === "string" &&
+    typeof decoded === "string" &&
+    (gs1 === undefined || gs1 === null || typeof gs1 === "string")
+  );
+}
+
+/** `X-Barcodes`: `null` when it is missing or not a JSON array of barcodes. */
+function barcodesHeader(headers: Headers): Barcode[] | null {
+  const value = jsonHeader(headers, "x-barcodes");
+  return Array.isArray(value) && value.every(isBarcode) ? value : null;
+}
+
+/** `X-Text`: `null` when it is missing or not a JSON array of strings. */
+function textHeader(headers: Headers): string[] | null {
+  const value = jsonHeader(headers, "x-text");
+  return Array.isArray(value) && value.every((line) => typeof line === "string") ? value : null;
+}
+
 /** An image the API returned. */
 export class ImageResult {
   /** The encoded image. */
@@ -45,6 +79,26 @@ export class ImageResult {
   readonly quality: number | undefined;
   /** The raw `Server-Timing` value: per-step durations. */
   readonly serverTiming: string | undefined;
+  /**
+   * The barcodes a recipe's `[barcodes]` step read (`X-Barcodes`), as
+   * `readBarcodes` gives them; `[]` when it ran and found none. `null` when
+   * the recipe has no such step (no header), and also when the header is not
+   * a JSON array of barcodes: it is ignored rather than thrown on.
+   */
+  readonly barcodes: Barcode[] | null;
+  /**
+   * The lines of text a recipe's `[text]` step read, top to bottom
+   * (`X-Text`); `[]` when it ran and found none. `null` when the recipe has
+   * no such step (no header), and also when the header is not a JSON array
+   * of strings: it is ignored rather than thrown on. (Not `text`, which
+   * `VectorizeResult` has as a method.)
+   */
+  readonly textLines: string[] | null;
+  /**
+   * `true` when `textLines` leaves lines out because the header has a size limit
+   * (`X-Text-Truncated`); `false` otherwise.
+   */
+  readonly textTruncated: boolean;
   /** All response headers. */
   readonly headers: Headers;
 
@@ -58,6 +112,9 @@ export class ImageResult {
     this.height = numberHeader(headers, "x-image-height") ?? 0;
     this.quality = numberHeader(headers, "x-image-quality");
     this.serverTiming = headers.get("server-timing") ?? undefined;
+    this.barcodes = barcodesHeader(headers);
+    this.textLines = textHeader(headers);
+    this.textTruncated = booleanHeader(headers, "x-text-truncated") === true;
   }
 
   /** The image as a `Blob` with its content type. */

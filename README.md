@@ -417,7 +417,37 @@ max_side = 1600
 const custom = await photos.run("shoe.jpg", { recipe });
 
 const presets = await photos.presets(); // [{ name, description }, ...]
+const toml = await photos.preset("marketplace"); // that preset's recipe, as TOML
 ```
+
+`preset(name)` returns a built-in preset's recipe, a starting point for your
+own; an unknown name is a `NotFoundError`.
+
+A recipe can also read the photo: `[barcodes]` (with `all_formats = true` for
+every format, not only retail codes) and `[text]`. The image comes back as
+usual, and what was read is on the result:
+
+```ts
+const read = await photos.run("box.jpg", {
+  recipe: `
+[barcodes]
+all_formats = true
+
+[text]
+
+[output]
+format = "webp"
+`,
+});
+for (const barcode of read.barcodes ?? []) console.log(barcode.format, barcode.value, barcode.gs1);
+console.log(read.textLines); // ["Pršut", "500 g"]: the lines, top to bottom
+read.textTruncated; // true when lines were left out (the API sends at most 8 KB)
+```
+
+`barcodes` and `textLines` are `null` when the recipe has no such step, and
+`[]` when the step ran and found nothing. Every `ImageResult` has them,
+including a `run` job item's `image()`. Reading steps need an engine that has
+them; an older one answers `422` (`UnprocessableError`).
 
 ## Check and fix
 

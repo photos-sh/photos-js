@@ -6,6 +6,19 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
+- `run` recipes can read the photo with `[barcodes]` (`all_formats = true`
+  for every format) and `[text]`. The image result has what they found:
+  `barcodes` (`Barcode[]`, from `X-Barcodes`), `textLines` (`string[]`, the
+  lines top to bottom, from `X-Text`) and `textTruncated` (`X-Text-Truncated`:
+  lines were left out to keep the header under 8 KB). `barcodes` and
+  `textLines` are `null` when the recipe has no such step, or when the header
+  is not the JSON expected, and `[]` when the step found nothing. They are on
+  every `ImageResult`, so a job item's `image()` has them too. The field is
+  `textLines`, not `text`, because `VectorizeResult` has a `text()` method.
+  Reading steps need an engine with them (Vallic/photos#7); an older engine
+  answers `422` (`UnprocessableError`).
+- `preset(name)` returns a built-in preset's recipe as TOML
+  (`GET /v1/presets/{name}`); an unknown name is a `NotFoundError`.
 - `removeBackground` takes `studio`, for studio shots (a product on a plain,
   light backdrop): it also keeps what clearly stands out from the backdrop and
   touches the product, such as the gift box, case or lid shown with a bottle.

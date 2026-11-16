@@ -402,6 +402,21 @@ describe("jobs", () => {
     assert.throws(() => json.removeBackground(), /not an image/);
   });
 
+  it("an item's image result has the barcodes and text a run recipe read", async (t) => {
+    const { photos } = await fixture(t, () =>
+      imageReply({
+        "x-barcodes": '[{"format":"EAN-13","value":"3850104010017","gs1":"3850104010017"}]',
+        "x-text": '["Pr\\u0161ut"]',
+        "x-text-truncated": "true",
+      }),
+    );
+    const image = (await photos.jobs.result("job_1", 0)).image();
+    assert.deepEqual(image.barcodes, [
+      { format: "EAN-13", value: "3850104010017", gs1: "3850104010017" },
+    ]);
+    assert.deepEqual([image.textLines, image.textTruncated], [["Pršut"], true]);
+  });
+
   it("the newer accessors throw on results without their headers", async (t) => {
     const { photos } = await fixture(t, (_request, n) =>
       n === 1 ? imageReply() : { body: { faces: [] } },

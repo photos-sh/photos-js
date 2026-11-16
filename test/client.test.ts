@@ -10,6 +10,7 @@ import {
   FixResult,
   IdPhotoResult,
   ImageResult,
+  NotFoundError,
   Photos,
   PhotosError,
   RemoveBackgroundResult,
@@ -239,6 +240,59 @@ describe("image methods", () => {
       ["image", "recipe"],
     );
     assert.equal(request.parts[1]?.data.toString("utf8"), recipe);
+  });
+
+  it("run reads what a recipe's [barcodes] and [text] steps found", async (t) => {
+    const barcodes = [
+      { format: "EAN-13", value: "3850104010017", gs1: "3850104010017" },
+      { format: "QR", value: "https://example.com", gs1: null },
+    ];
+    const { photos } = await fixture(t, () =>
+      imageReply({
+        "x-barcodes": JSON.stringify(barcodes),
+        // As the engine sends it: every non-ASCII character escaped.
+        "x-text": '["Pr\\u0161ut","500 g","\\ud83d\\udce6"]',
+        "x-text-truncated": "true",
+      }),
+    );
+    const result = await photos.run(IMAGE, { recipe: "[barcodes]\n\n[text]\n" });
+    assert.deepEqual(result.barcodes, barcodes);
+    assert.deepEqual(result.textLines, ["Pršut", "500 g", "\u{1F4E6}"]);
+    assert.equal(result.textTruncated, true);
+    assert.equal(result.width, 640);
+  });
+
+  it("run gives null for a reading step not in the recipe, and [] for one that found nothing", async (t) => {
+    const { photos } = await fixture(t, (_request, n) =>
+      n === 1 ? imageReply() : imageReply({ "x-barcodes": "[]", "x-text": "[]" }),
+    );
+    const none = await photos.run(IMAGE, { preset: "marketplace" });
+    assert.deepEqual([none.barcodes, none.textLines, none.textTruncated], [null, null, false]);
+    const empty = await photos.run(IMAGE, { recipe: "[barcodes]\nall_formats = true\n\n[text]\n" });
+    assert.deepEqual([empty.barcodes, empty.textLines, empty.textTruncated], [[], [], false]);
+  });
+
+  it("run treats an X-Barcodes or X-Text that is not the expected JSON as missing", async (t) => {
+    const replies = [
+      { "x-barcodes": "not json", "x-text": '["unclosed' },
+      { "x-barcodes": '{"format":"EAN-13"}', "x-text": '"one line"' },
+      { "x-barcodes": '[{"format":"EAN-13"}]', "x-text": '["a",1]' },
+      { "x-barcodes": '[{"format":"EAN-13","value":"1","gs1":5}]', "x-text": "null" },
+    ];
+    const { photos } = await fixture(t, (_request, n) => imageReply(replies[n - 1]));
+    for (const _ of replies) {
+      const result = await photos.run(IMAGE, { preset: "marketplace" });
+      assert.deepEqual([result.barcodes, result.textLines], [null, null]);
+    }
+  });
+
+  it("other image methods read the headers too", async (t) => {
+    const { photos } = await fixture(t, () =>
+      imageReply({ "x-barcodes": '[{"format":"EAN-8","value":"96385074"}]', "x-text": '["A"]' }),
+    );
+    const result = await photos.removeBackground(IMAGE);
+    assert.deepEqual(result.barcodes, [{ format: "EAN-8", value: "96385074" }]);
+    assert.deepEqual(result.textLines, ["A"]);
   });
 
   it("fix returns the verdict", async (t) => {
@@ -862,6 +916,42 @@ describe("JSON methods", () => {
         "GET /v1/webhook-secret 0",
       ],
     );
+  });
+});
+
+describe("preset", () => {
+  it("GETs the preset's recipe and returns the TOML as text", async (t) => {
+    const toml = '# Marketplace\n[remove_background]\nfill = "#ffffff"\n';
+    const { photos, server } = await fixture(t, () => ({
+      headers: { "content-type": "application/toml; charset=utf-8" },
+      body: toml,
+    }));
+    assert.equal(await photos.preset("marketplace"), toml);
+    const request = only(server);
+    assert.equal(
+      `${request.method} ${request.path} ${request.body.length}`,
+      "GET /v1/presets/marketplace 0",
+    );
+    assert.equal(request.headers.authorization, "Bearer test-key");
+  });
+
+  it("encodes the name as one path segment", async (t) => {
+    const { photos, server } = await fixture(t, () => ({ body: "" }));
+    await photos.preset("a/b c?d");
+    assert.equal(only(server).path, "/v1/presets/a%2Fb%20c%3Fd");
+  });
+
+  it("an unknown name is a NotFoundError", async (t) => {
+    const { photos } = await fixture(t, () => ({
+      status: 404,
+      body: { error: { code: "not_found", message: "No preset named nope" } },
+    }));
+    await assert.rejects(photos.preset("nope"), (error: unknown) => {
+      assert.ok(error instanceof NotFoundError);
+      assert.equal(error.code, "not_found");
+      assert.equal(error.message, "No preset named nope");
+      return true;
+    });
   });
 });
 
