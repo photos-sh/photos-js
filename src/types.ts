@@ -23,6 +23,22 @@ export type Marketplace = Open<
   "amazon" | "ebay" | "etsy" | "shopify" | "google" | "allegro" | "zalando"
 >;
 
+/**
+ * The model that finds the subject in `removeBackground`. Each costs the same;
+ * try another when one drops part of what you sell. Any other string is sent
+ * as it is, so a model the API adds later works without a new release.
+ *
+ * - `atlas` (the API's default): everyday product photos, a product alone or
+ *   with its box, on any backdrop.
+ * - `lumen`: pale packaging on a light backdrop, such as a cream or wooden box
+ *   beside a bottle, and close-ups where the product fills the photo. On
+ *   those, `atlas` can keep the bottle and drop the box. It may keep a dark
+ *   backdrop at the photo's edge, and can cut away part of an open frame or
+ *   wire stand.
+ * - `muse`: people, in portraits and as models wearing the product.
+ */
+export type BackgroundModel = Open<"atlas" | "lumen" | "muse">;
+
 /** Options of every method that returns an image. */
 export interface OutputOptions {
   /** Output format. Defaults to the photo's own; `removeBackground` defaults to PNG. */
@@ -42,6 +58,13 @@ export interface RemoveBackgroundOptions extends OutputOptions, RequestOptions {
   crop?: boolean | undefined;
   /** Margin around the subject when cropping, in pixels. */
   padding?: number | undefined;
+  /**
+   * The model that finds the subject: `atlas` (the API's default) for
+   * everyday product photos, `lumen` for pale packaging on a light backdrop
+   * and close-ups, `muse` for people. See {@link BackgroundModel}. Sent only
+   * when set. Works with `studio`.
+   */
+  model?: BackgroundModel | undefined;
   /**
    * For studio shots (a product on a plain, light backdrop, as in a light
    * tent): also keep what clearly stands out from the backdrop and touches the

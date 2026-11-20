@@ -372,6 +372,19 @@ describe("image methods", () => {
     assert.equal(server.requests[1]?.query.toString(), "");
   });
 
+  it("removeBackground sends model, any name, and leaves it out when not set", async (t) => {
+    const { photos, server } = await fixture(t, () => imageReply());
+    await photos.removeBackground(IMAGE, { crop: true, model: "lumen", studio: true });
+    await photos.removeBackground(IMAGE, { model: "muse" });
+    await photos.removeBackground(IMAGE, { model: "nova" }); // a model the API adds later
+    await photos.removeBackground(IMAGE, { model: undefined });
+    assert.equal(server.requests[0]?.path, "/v1/remove-background");
+    assert.equal(server.requests[0]?.query.toString(), "crop=true&model=lumen&studio=true");
+    assert.equal(server.requests[1]?.query.toString(), "model=muse");
+    assert.equal(server.requests[2]?.query.toString(), "model=nova");
+    assert.equal(server.requests[3]?.query.toString(), "");
+  });
+
   it("resize maps trimTolerance to trim_tolerance and sends dpi", async (t) => {
     const { photos, server } = await fixture(t, () => imageReply());
     await photos.resize(IMAGE, { trim: true, trimTolerance: 20, dpi: 300 });

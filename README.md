@@ -120,12 +120,29 @@ const mask = await photos.removeBackground("shoe.jpg", { mask: true });
 // A studio shot (a product on a plain, light backdrop, as in a light tent):
 // also keep the gift box, case or lid shown with the bottle.
 const boxed = await photos.removeBackground("bottle.jpg", { studio: true });
+
+// Another model to find the subject: "atlas" (the default), "lumen" or "muse".
+const pale = await photos.removeBackground("perfume.jpg", { model: "lumen", studio: true });
+const portrait = await photos.removeBackground("model.jpg", { model: "muse" });
 ```
 
 `studio` also keeps what clearly stands out from the backdrop and touches the
 product, such as a pale box the model left half transparent. Shadows and the
 floor below the product are left out. A photo without a plain light backdrop
 is cut out as without it.
+
+`model` is the model that finds the subject. Each costs the same; try another
+when one drops part of what you sell. Left out, the API uses `atlas`.
+
+| Model | Recommended for |
+|---|---|
+| `atlas` (default) | Everyday product photos: a product alone or with its box, on any backdrop. |
+| `lumen` | Pale packaging on a light backdrop, such as a cream or wooden box beside a bottle, and close-ups where the product fills the photo. On those, `atlas` can keep the bottle and drop the box. It may keep a dark backdrop at the photo's edge, and can cut away part of an open frame or wire stand. |
+| `muse` | People: portraits, and models wearing the product. |
+
+It is typed `BackgroundModel`: those three names, or any other string, so a
+model the API adds later works without a new version of this library. It
+works with `studio`.
 
 The same call can stage the cutout: on a canvas, with a shadow or a reflection
 under it, and with a colour, an image or the photo's own blurred background
@@ -557,7 +574,8 @@ await photos.jobs.delete(job.id);
   `id-photo`, `denoise`, `colorize`, `select`, `restore-faces`, `caption`. For
   `run`, pass `params: { preset: "..." }` or `recipe` (TOML).
 - A job item is one image, so a `watermark` job takes `text` only, and a
-  `remove-background` job no `backgroundImage`.
+  `remove-background` job no `backgroundImage` (`model` and `studio` it takes
+  as the method does: `params: { model: "lumen", studio: true }`).
 - Items are numbered from 0: the images in order, then the URLs.
 - `completed` means every item was attempted; look at `counts.failed`.
 - `jobs.result` returns a `JobItemResult` with `bytes`, `contentType`,
