@@ -87,7 +87,17 @@ describe("jobs.create", () => {
     const { photos, server } = await fixture(t, () => ({ status: 202, body: job("queued") }));
     await photos.jobs.create({
       operation: "remove-background",
-      params: { format: "png", maxBytes: 5, model: "lumen" },
+      params: {
+        format: "png",
+        maxBytes: 5,
+        model: "lumen",
+        feather: 0,
+        smooth: 2,
+        shift: -1.5,
+        hardness: 50,
+        decontaminate: false,
+        solidify: true,
+      },
       images: [new File([IMAGE], "one.jpg"), IMAGE],
       urls: ["https://example.com/3.jpg"],
       recipe: "toml",
@@ -103,7 +113,11 @@ describe("jobs.create", () => {
       ]),
       [
         ["operation", undefined, "remove-background"],
-        ["params", undefined, "format=png&max_bytes=5&model=lumen"],
+        [
+          "params",
+          undefined,
+          "format=png&max_bytes=5&model=lumen&feather=0&smooth=2&shift=-1.5&hardness=50&decontaminate=false&solidify=true",
+        ],
         ["recipe", "recipe.toml", 4],
         ["webhook_url", undefined, "https://example.com/hook"],
         ["image", "one.jpg", IMAGE.length],

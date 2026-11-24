@@ -106,6 +106,12 @@ describe("image methods", () => {
       background: "#ffffff",
       crop: true,
       padding: 12,
+      feather: 2,
+      smooth: 1.5,
+      shift: -1.5,
+      hardness: 50,
+      decontaminate: true,
+      solidify: true,
       mask: false,
       quality: undefined,
     });
@@ -114,7 +120,7 @@ describe("image methods", () => {
     assert.equal(request.path, "/v1/remove-background");
     assert.equal(
       request.query.toString(),
-      "format=png&background=%23ffffff&crop=true&padding=12&mask=false",
+      "format=png&background=%23ffffff&crop=true&padding=12&feather=2&smooth=1.5&shift=-1.5&hardness=50&decontaminate=true&solidify=true&mask=false",
     );
     assert.match(request.headers["content-type"] ?? "", /^multipart\/form-data; boundary=/);
     assert.equal(request.parts.length, 1);
@@ -383,6 +389,40 @@ describe("image methods", () => {
     assert.equal(server.requests[1]?.query.toString(), "model=muse");
     assert.equal(server.requests[2]?.query.toString(), "model=nova");
     assert.equal(server.requests[3]?.query.toString(), "");
+  });
+
+  it("removeBackground sends feather 0 and decontaminate false, and leaves the edge options out when not set", async (t) => {
+    const { photos, server } = await fixture(t, () => imageReply());
+    await photos.removeBackground(IMAGE, { feather: 0, decontaminate: false });
+    await photos.removeBackground(IMAGE, {
+      feather: 0,
+      smooth: 0,
+      shift: 0,
+      hardness: 0,
+      decontaminate: false,
+      solidify: false,
+    });
+    await photos.removeBackground(IMAGE, { shift: -1.5, hardness: 50 });
+    await photos.removeBackground(IMAGE, {
+      crop: true,
+      feather: undefined,
+      smooth: undefined,
+      shift: undefined,
+      hardness: undefined,
+      decontaminate: undefined,
+      solidify: undefined,
+    });
+    await photos.removeBackground(IMAGE);
+    assert.equal(server.requests[0]?.path, "/v1/remove-background");
+    // 0 and false are values: sent, not taken for "not set".
+    assert.equal(server.requests[0]?.query.toString(), "feather=0&decontaminate=false");
+    assert.equal(
+      server.requests[1]?.query.toString(),
+      "feather=0&smooth=0&shift=0&hardness=0&decontaminate=false&solidify=false",
+    );
+    assert.equal(server.requests[2]?.query.toString(), "shift=-1.5&hardness=50");
+    assert.equal(server.requests[3]?.query.toString(), "crop=true");
+    assert.equal(server.requests[4]?.query.toString(), "");
   });
 
   it("resize maps trimTolerance to trim_tolerance and sends dpi", async (t) => {

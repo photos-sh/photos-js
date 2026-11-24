@@ -74,6 +74,42 @@ export interface RemoveBackgroundOptions extends OutputOptions, RequestOptions {
    * without it.
    */
   studio?: boolean | undefined;
+  /**
+   * How soft the cutout's edge is: a blur of this many pixels across it, 0 to
+   * 10. `0` is the model's hard edge, and is sent. Left out, it grows with the
+   * photo: 0.7 pixels for every 1000 of its long side.
+   */
+  feather?: number | undefined;
+  /**
+   * Irons out ripples in the cutout's outline, 0 (the API's default) to 10.
+   * From about 4 it rounds small corners and breaks up thin parts, such as a
+   * wire stand.
+   */
+  smooth?: number | undefined;
+  /**
+   * Moves the cutout's edge, in pixels, -10 to 10 (the API's default is 0):
+   * inward when negative, outward when positive. A small negative shift trims
+   * the light rim a dark subject shows on a dark background.
+   */
+  shift?: number | undefined;
+  /**
+   * Narrows the edge, after `feather`: 0 (the API's default) to 100, where it
+   * is about a pixel wide. On a dark background, pair it with a small negative
+   * `shift`.
+   */
+  hardness?: number | undefined;
+  /**
+   * Cleans the old background's colour out of the soft edge. The API's
+   * default is `true`; `false` keeps the photo's own colours there, and is
+   * sent.
+   */
+  decontaminate?: boolean | undefined;
+  /**
+   * Makes semi-transparent areas inside the subject opaque, for an opaque
+   * product the model was unsure about in places. Wrong for glass, smoke or
+   * hair.
+   */
+  solidify?: boolean | undefined;
   /** Return the greyscale alpha mask instead of the cutout. Takes no staging options. */
   mask?: boolean | undefined;
   /** Place the subject on a canvas this wide, in pixels. Needs `height`. */

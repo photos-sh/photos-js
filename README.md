@@ -144,6 +144,29 @@ It is typed `BackgroundModel`: those three names, or any other string, so a
 model the API adds later works without a new version of this library. It
 works with `studio`.
 
+Six options change the cutout's edge:
+
+| Option | Range | Left out | What it does |
+|---|---|---|---|
+| `feather` | 0 to 10 pixels | Grows with the photo: 0.7 pixels for every 1000 of its long side | How soft the edge is. `0` is the model's hard edge. |
+| `smooth` | 0 to 10 | 0 | Irons out ripples in the outline. From about 4 it rounds small corners and breaks up thin parts, such as a wire stand. |
+| `shift` | -10 to 10 pixels | 0 | Moves the edge: inward when negative, outward when positive. A small negative shift trims the light rim a dark subject shows on a dark background. |
+| `hardness` | 0 to 100 | 0 | Narrows the edge, after the feather: at 100 it is about a pixel wide. On a dark background, pair it with a small negative `shift`. |
+| `decontaminate` | `true` or `false` | `true` | Cleans the old background's colour out of the soft edge. `false` keeps the photo's own colours there. |
+| `solidify` | `true` or `false` | `false` | Makes semi-transparent areas inside the subject opaque, for an opaque product the model was unsure about. Wrong for glass, smoke or hair. |
+
+```ts
+// A dark bottle for a dark page: trim the light rim, and make the edge crisp.
+const bottle = await photos.removeBackground("bottle.jpg", { shift: -1.5, hardness: 50 });
+
+// The model's hard edge: no feather.
+const hard = await photos.removeBackground("shoe.jpg", { feather: 0 });
+```
+
+An option left out is not sent; `0` and `false` are sent. The API checks the
+ranges: a value outside one is a `BadRequestError`, with a message such as
+`shift must be between -10 and 10`.
+
 The same call can stage the cutout: on a canvas, with a shadow or a reflection
 under it, and with a colour, an image or the photo's own blurred background
 behind it.
@@ -574,8 +597,9 @@ await photos.jobs.delete(job.id);
   `id-photo`, `denoise`, `colorize`, `select`, `restore-faces`, `caption`. For
   `run`, pass `params: { preset: "..." }` or `recipe` (TOML).
 - A job item is one image, so a `watermark` job takes `text` only, and a
-  `remove-background` job no `backgroundImage` (`model` and `studio` it takes
-  as the method does: `params: { model: "lumen", studio: true }`).
+  `remove-background` job no `backgroundImage` (`model`, `studio` and the edge
+  options it takes as the method does:
+  `params: { model: "lumen", studio: true, shift: -1.5, hardness: 50 }`).
 - Items are numbered from 0: the images in order, then the URLs.
 - `completed` means every item was attempted; look at `counts.failed`.
 - `jobs.result` returns a `JobItemResult` with `bytes`, `contentType`,
